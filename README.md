@@ -3,7 +3,7 @@
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-14-black)
 ![Prisma](https://img.shields.io/badge/Prisma-5-blue)
-![Docker Image Version (latest by date)](https://img.shields.io/docker/v/qiuhusama/emby-insight?label=docker%20image)
+[![Docker Image Version (latest by date)](https://img.shields.io/docker/v/qiuhusama/emby-insight?label=docker%20image)](https://hub.docker.com/r/qiuhusama/emby-insight)
 
 ![Dashboard Preview](./public/dashboard-preview.png)
 
