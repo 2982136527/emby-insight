@@ -3,6 +3,7 @@
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-14-black)
 ![Prisma](https://img.shields.io/badge/Prisma-5-blue)
+![Docker Image Version (latest by date)](https://img.shields.io/docker/v/qiuhusama/emby-insight?label=docker%20image)
 
 ![Dashboard Preview](./public/dashboard-preview.png)
 
@@ -95,7 +96,43 @@
 6. **访问面板**
    打开浏览器访问 [http://localhost:3000](http://localhost:3000)。
 
-## 📝 使用指南
+## 🐳 Docker 部署
+
+您可以直接使用我们发布的 Docker 镜像，无需手动构建。
+
+1. **创建 `docker-compose.yml`**
+
+   ```yaml
+   version: '3'
+
+   services:
+     emby-insight:
+       image: qiuhusama/emby-insight:latest
+       container_name: emby-insight
+       restart: always
+       ports:
+         - "3000:3000"
+       volumes:
+         - ./data:/app/data
+       environment:
+         - DATABASE_URL=file:/app/data/dev.db
+   ```
+
+2. **启动服务**
+   ```bash
+   docker-compose up -d
+   ```
+
+2. **数据持久化**
+   Docker Compose 配置已将数据库映射到当前目录下的 `./data` 文件夹。这意味着即使重启或重建容器，您的数据（播放历史、用户关联等）也会被保留。
+
+   > **注意**：容器启动时会自动运行 `prisma db push` 以确保数据库结构是最新的。
+
+3. **访问**
+   服务启动后，访问 `http://localhost:3000` 即可。
+
+
+## �📝 使用指南
 
 1. **首次同步**：进入用户管理页面，系统会自动尝试连接已配置的 Emby 服务器并同步用户数据。
 2. **关联用户**：在“服务器用户”列表中，勾选属于同一个人的账号，点击“关联用户”将其合并为一个全局账号。
