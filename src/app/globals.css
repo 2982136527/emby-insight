@@ -1,26 +1,138 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: oklch(100% 0 0);
+  --color-foreground: oklch(14.5% 0 0);
+  --color-card: oklch(100% 0 0);
+  --color-card-foreground: oklch(14.5% 0 0);
+  --color-popover: oklch(100% 0 0);
+  --color-popover-foreground: oklch(14.5% 0 0);
+  --color-primary: oklch(47.3% 0.137 281.1);
+  --color-primary-foreground: oklch(98.5% 0 0);
+  --color-secondary: oklch(96.1% 0 0);
+  --color-secondary-foreground: oklch(21% 0 0);
+  --color-muted: oklch(96.1% 0 0);
+  --color-muted-foreground: oklch(55.6% 0 0);
+  --color-accent: oklch(96.1% 0 0);
+  --color-accent-foreground: oklch(21% 0 0);
+  --color-destructive: oklch(57.7% 0.245 27.325);
+  --color-destructive-foreground: oklch(98.5% 0 0);
+  --color-border: oklch(90.3% 0 0);
+  --color-input: oklch(90.3% 0 0);
+  --color-ring: oklch(47.3% 0.137 281.1);
+  --color-chart-1: oklch(64.6% 0.222 41.116);
+  --color-chart-2: oklch(60% 0.118 184.704);
+  --color-chart-3: oklch(39.8% 0.07 227.392);
+  --color-chart-4: oklch(82.8% 0.189 84.429);
+  --color-chart-5: oklch(76.9% 0.188 70.08);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: oklch(98.5% 0 0);
+  --color-sidebar-foreground: oklch(14.5% 0 0);
+  --color-sidebar-primary: oklch(47.3% 0.137 281.1);
+  --color-sidebar-primary-foreground: oklch(98.5% 0 0);
+  --color-sidebar-accent: oklch(96.1% 0 0);
+  --color-sidebar-accent-foreground: oklch(21% 0 0);
+  --color-sidebar-border: oklch(90.3% 0 0);
+  --color-sidebar-ring: oklch(47.3% 0.137 281.1);
+  --radius: 0.625rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Dark mode overrides */
+:root.dark,
+.dark {
+  --color-background: oklch(10% 0 0);
+  --color-foreground: oklch(98.5% 0 0);
+  --color-card: oklch(14% 0.005 280);
+  --color-card-foreground: oklch(98.5% 0 0);
+  --color-popover: oklch(12% 0.005 280);
+  --color-popover-foreground: oklch(98.5% 0 0);
+  --color-primary: oklch(65% 0.18 280);
+  --color-primary-foreground: oklch(100% 0 0);
+  --color-secondary: oklch(22% 0.01 280);
+  --color-secondary-foreground: oklch(98.5% 0 0);
+  --color-muted: oklch(20% 0.01 280);
+  --color-muted-foreground: oklch(65% 0 0);
+  --color-accent: oklch(25% 0.02 280);
+  --color-accent-foreground: oklch(98.5% 0 0);
+  --color-destructive: oklch(60% 0.25 27);
+  --color-destructive-foreground: oklch(98.5% 0 0);
+  --color-border: oklch(25% 0.01 280);
+  --color-input: oklch(25% 0.01 280);
+  --color-ring: oklch(65% 0.18 280);
+  --color-chart-1: oklch(65% 0.22 280);
+  --color-chart-2: oklch(70% 0.17 160);
+  --color-chart-3: oklch(75% 0.15 40);
+  --color-chart-4: oklch(80% 0.18 85);
+  --color-chart-5: oklch(70% 0.19 330);
+  --color-sidebar: oklch(12% 0.005 280);
+  --color-sidebar-foreground: oklch(98.5% 0 0);
+  --color-sidebar-primary: oklch(65% 0.18 280);
+  --color-sidebar-primary-foreground: oklch(100% 0 0);
+  --color-sidebar-accent: oklch(22% 0.02 280);
+  --color-sidebar-accent-foreground: oklch(98.5% 0 0);
+  --color-sidebar-border: oklch(25% 0.01 280);
+  --color-sidebar-ring: oklch(65% 0.18 280);
+}
+
+/* Custom scrollbar for dark mode */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: oklch(14.5% 0 0);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: oklch(35% 0 0);
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: oklch(45% 0 0);
+}
+
+/* Animation utilities */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* Gradient text utility */
+.gradient-text {
+  background: linear-gradient(135deg, oklch(70% 0.15 280), oklch(60% 0.2 330));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.h-18 {
+  height: 4.5rem;
 }

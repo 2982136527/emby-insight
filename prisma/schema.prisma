@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Emby 服务器配置
+model Server {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  port      Int      @default(8096)
+  apiKey    String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users       ServerUser[]
+  playHistory PlayHistory[]
+  syncLogs    SyncLog[]
+}
+
+// 服务器上的用户 (Emby User)
+model ServerUser {
+  id           String      @id @default(cuid())
+  embyUserId   String      // Emby 原始 User ID
+  username     String
+  serverId     String
+  server       Server      @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  globalUserId String?
+  globalUser   GlobalUser? @relation(fields: [globalUserId], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  playHistory PlayHistory[]
+
+  @@unique([serverId, embyUserId])
+}
+
+// 聚合身份 (跨服务器的同一自然人)
+model GlobalUser {
+  id        String       @id @default(cuid())
+  name      String
+  avatar    String?
+  isHidden  Boolean      @default(false) // 隐私开关
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  serverUsers ServerUser[]
+}
+
+// 播放历史记录
+model PlayHistory {
+  id String @id @default(cuid())
+
+  // 关联
+  serverId     String
+  server       Server     @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  serverUserId String
+  serverUser   ServerUser @relation(fields: [serverUserId], references: [id], onDelete: Cascade)
+
+  // 媒体信息
+  itemId        String  // Emby Item ID
+  itemName      String
+  itemType      String  // Movie, Episode, Audio, etc.
+  seriesName    String? // 剧集名
+  seasonName    String?
+  episodeNumber Int?
+
+  // 媒体元数据
+  genres   String // JSON array
+  year     Int?
+  duration BigInt    // 总时长 (ticks)
+
+  // 播放信息
+  playedAt         DateTime
+  playDuration     BigInt   @default(0) // 实际观看时长 (ticks)
+  playCount        Int      @default(1)
+  isCompleted      Boolean  @default(false) // 是否完播
+  playbackPosition BigInt   @default(0) // 暂停位置
+
+  // 视频质量
+  videoCodec String?
+  resolution String? // 4K, 1080P, 720P
+  isHdr      Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([serverId, serverUserId, itemId, playedAt])
+  @@index([serverId, playedAt])
+  @@index([serverUserId, playedAt])
+  @@index([itemType])
+}
+
+// 同步状态跟踪
+model SyncLog {
+  id        String   @id @default(cuid())
+  serverId  String
+  server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  syncType  String   // users, playhistory
+  lastSync  DateTime
+  status    String   // success, failed
+  message   String?
+  createdAt DateTime @default(now())
+}
+
+// 实时会话日志 (持久化的观看记录)
+model SessionLog {
+  id           String   @id @default(cuid())
+  sessionId    String   // Emby Session ID
+  serverId     String
+  serverUserId String?
+  
+  // 用户信息
+  username     String
+  userId       String   // Emby User ID
+  
+  // 设备信息
+  client       String   // 客户端名称 (Emby Web, Infuse, etc)
+  deviceName   String   // 设备名称
+  deviceId     String?  // 设备 ID
+  
+  // 媒体信息
+  itemId       String
+  itemName     String
+  itemType     String   // Movie, Episode, etc
+  seriesName   String?
+  
+  // 播放信息
+  startedAt    DateTime // 开始观看时间
+  endedAt      DateTime? // 结束观看时间 (null = 正在观看)
+  duration     BigInt   @default(0) // 视频进度 (ticks)
+  positionTicks BigInt  @default(0) // 当前位置
+  realDuration BigInt   @default(0) // 真实观看时长 (毫秒) - 用户实际花费的时间
+  
+  // 播放状态
+  isPaused     Boolean  @default(false)
+  isActive     Boolean  @default(true) // 是否仍在活动
+  ipAddress    String?  // 客户端 IP
+
+  
+  // 转码信息
+  isTranscoding Boolean @default(false)
+  transcodeReasons String? // JSON array
+  videoCodec   String?
+  audioCodec   String?
+  bitrate      Int?     // Kbps
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@index([username, startedAt])
+}
+
+// 通知配置
+model NotificationConfig {
+  id        String   @id @default(cuid())
+  enabled   Boolean  @default(false)
+  
+  // Webhook 设置
+  webhookUrl String?
+  webhookType String? @default("generic") // discord, telegram, generic
+  
+  // 通知触发事件
+  onPlaybackStart Boolean @default(true)
+  onPlaybackStop  Boolean @default(false)
+  
+  updatedAt DateTime @updatedAt
+}
