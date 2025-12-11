@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
 
         if (type === 'tv' || !type) {
             try {
-                const tvShows = await tmdbPrisma.tmdbTv.findMany({
+                const tvShows = await tmdbPrisma.tmdbTvShow.findMany({
                     where: {
                         OR: [
                             { name: { contains: searchTerm } },

@@ -25,7 +25,8 @@ COPY . .
 ENV DATABASE_URL="file:./dev.db"
 
 # Generate Prisma Client
-RUN npx prisma generate
+# Generate Prisma Client
+RUN npx prisma generate --schema prisma/schema.prisma && npx prisma generate --schema prisma/tmdb.prisma
 
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry

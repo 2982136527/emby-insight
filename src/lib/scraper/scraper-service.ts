@@ -351,19 +351,20 @@ export async function scrapeItem(
     const cachedItems = await getCachedTmdbItems(type, item.name)
 
     // Convert to matcher format
-    const matcherItems = cachedItems.map(c => ({
+    // Convert to matcher format
+    const matcherItems = cachedItems.map((c: any) => ({
         id: c.id,
-        title: type === 'movie' ? (c as any).title : (c as any).name,
-        titleCn: type === 'movie' ? (c as any).titleCn : (c as any).nameCn,
-        originalTitle: type === 'movie' ? (c as any).originalTitle : (c as any).originalName,
-        releaseDate: type === 'movie' ? (c as any).releaseDate : (c as any).firstAirDate,
+        title: type === 'movie' ? c.title : c.name,
+        titleCn: type === 'movie' ? c.titleCn : c.nameCn,
+        originalTitle: type === 'movie' ? c.originalTitle : c.originalName,
+        releaseDate: type === 'movie' ? c.releaseDate : c.firstAirDate,
     }))
 
     const matchResult = matchItem(item.name, item.productionYear, matcherItems)
 
     if (matchResult.matched && matchResult.tmdbId) {
         // Found in cache
-        const cachedMetadata = cachedItems.find(c => c.id === matchResult.tmdbId)
+        const cachedMetadata = cachedItems.find((c: any) => c.id === matchResult.tmdbId)
         if (cachedMetadata) {
             return {
                 embyItemId: item.id,

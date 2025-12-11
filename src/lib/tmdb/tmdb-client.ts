@@ -138,10 +138,13 @@ interface DailyExportItem {
     original_title?: string
 }
 
+import { ProxyAgent } from 'undici'
+
 export class TmdbClient {
     private apiKey: string
     private language: string
     private baseURL = 'https://api.themoviedb.org/3'
+    private proxyAgent: ProxyAgent | undefined
 
     static readonly IMAGE_BASE_URL = 'https://image.tmdb.org/t/p'
     static readonly EXPORT_BASE_URL = 'https://files.tmdb.org/p/exports'
@@ -149,6 +152,13 @@ export class TmdbClient {
     constructor(apiKey: string, language: string = 'zh-CN') {
         this.apiKey = apiKey
         this.language = language
+
+        // Initialize ProxyAgent if proxy env vars are set
+        const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY
+        if (proxyUrl) {
+            console.log(`[TMDB] Using proxy: ${proxyUrl}`)
+            this.proxyAgent = new ProxyAgent(proxyUrl)
+        }
     }
 
     private async request<T>(endpoint: string, params: Record<string, any> = {}): Promise<T> {
@@ -172,7 +182,9 @@ export class TmdbClient {
             headers: {
                 'Accept': 'application/json',
             },
-            next: { revalidate: 0 } // No cache for API calls by default
+            next: { revalidate: 0 }, // No cache for API calls by default
+            // @ts-ignore - dispatcher is supported by Node's fetch (undici) but not in standard RequestInit type
+            dispatcher: this.proxyAgent
         })
 
         if (!response.ok) {
@@ -234,7 +246,10 @@ export class TmdbClient {
     private async downloadExportByDate(type: 'movie' | 'tv_series' | 'person', date: Date): Promise<number[]> {
         const url = TmdbClient.getDailyExportUrl(type, date)
 
-        const response = await fetch(url)
+        const response = await fetch(url, {
+            // @ts-ignore
+            dispatcher: this.proxyAgent
+        })
         if (!response.ok) {
             throw new Error(`Failed to download export: ${response.status}`)
         }

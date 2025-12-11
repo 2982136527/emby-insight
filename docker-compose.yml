@@ -16,5 +16,8 @@ services:
     environment:
       - DATABASE_URL=file:/app/data/dev.db
       - TMDB_DATABASE_URL=file:/app/data/tmdb.db
+      # 代理设置 (可选)
+      # - HTTP_PROXY=http://192.168.1.100:7890
+      # - HTTPS_PROXY=http://192.168.1.100:7890
       # Add other environment variables here if needed
       # - NEXT_PUBLIC_API_URL=http://localhost:3000

@@ -173,14 +173,14 @@ export class EmbyClient {
             SortBy,
             SortOrder,
             Recursive: String(Recursive),
-            Fields: Fields.join(','),
+            Fields: Array.isArray(Fields) ? Fields.join(',') : Fields,
         }
 
-        if (IncludeItemTypes?.length) {
-            queryParams.IncludeItemTypes = IncludeItemTypes.join(',')
+        if (IncludeItemTypes) {
+            queryParams.IncludeItemTypes = Array.isArray(IncludeItemTypes) ? IncludeItemTypes.join(',') : IncludeItemTypes
         }
-        if (Filters?.length) {
-            queryParams.Filters = Filters.join(',')
+        if (Filters) {
+            queryParams.Filters = Array.isArray(Filters) ? Filters.join(',') : Filters
         }
         if (IsPlayed !== undefined) {
             queryParams.IsPlayed = String(IsPlayed)

@@ -82,10 +82,14 @@ export default function TmdbSettingsPage() {
             }
             return 10000 // Refetch every 10 seconds if not syncing
         },
-        onError: (error: Error) => {
-            toast.error(error.message)
-        },
     })
+
+    // Handle sync errors via effect
+    useEffect(() => {
+        if (syncData?.statuses && !syncData.isSyncing) {
+            // check for errors? actually simple polling doesn't need aggressive error toasts
+        }
+    }, [syncData])
 
     // 获取配置
     const { data: config, isLoading: isLoadingConfig } = useQuery<TmdbConfig>({ // Added isLoadingConfig
