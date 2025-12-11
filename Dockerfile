@@ -69,4 +69,9 @@ ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
 # Custom entrypoint to run migrations and start server
-CMD npx prisma db push && node server.js
+# Expose volumes for persistence
+VOLUME ["/app/data", "/media"]
+
+# Custom entrypoint to run migrations and start server
+# Must push both main schema and tmdb schema
+CMD npx prisma db push --schema prisma/schema.prisma && npx prisma db push --schema prisma/tmdb.prisma && node server.js
