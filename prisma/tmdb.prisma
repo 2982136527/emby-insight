@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/@prisma/tmdb-client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("TMDB_DATABASE_URL")
+}
+
+// ============== TMDB 刮削缓存 ==============
+
+// TMDB 每日导出电影缓存
+model TmdbMovie {
+    id            Int      @id
+    imdbId        String?
+    title         String
+    originalTitle String?
+    titleCn       String?
+    overview      String?
+    overviewCn    String?
+    releaseDate   String?
+    runtime       Int?
+    popularity    Float?
+    voteAverage   Float?
+    voteCount     Int?
+    posterPath    String?
+    backdropPath  String?
+    // JSON string of genre IDs
+    genreIds      String?
+    isAdult       Boolean?
+    // JSON string of images (backdrops, posters, logos)
+    images        String?
+    // JSON string of credits (cast, crew)
+    credits       String?
+    isFullySynced Boolean  @default(false)
+
+    createdAt     DateTime @default(now())
+    updatedAt     DateTime @updatedAt
+
+    @@index([title])
+    @@index([titleCn])
+    @@index([originalTitle])
+}
+
+// TMDB 每日导出电视剧缓存
+model TmdbTvShow {
+    id              Int      @id
+    name            String
+    originalName    String?
+    nameCn          String?
+    overview        String?
+    overviewCn      String?
+    firstAirDate    String?
+    lastAirDate     String?
+    numberOfSeasons Int?
+    numberOfEpisodes Int?
+    popularity      Float?
+    voteAverage     Float?
+    voteCount       Int?
+    posterPath      String?
+    backdropPath    String?
+    // JSON string of genre IDs
+    genreIds        String?
+    status          String?
+    // JSON string of images (backdrops, posters, logos)
+    images          String?
+    // JSON string of credits (cast, crew)
+    credits         String?
+    isFullySynced   Boolean  @default(false)
+
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @updatedAt
+
+    @@index([name])
+    @@index([nameCn])
+    @@index([originalName])
+}
+
+// TMDB 人物缓存
+model TmdbPerson {
+    id                 Int      @id
+    name               String
+    originalName       String?
+    nameCn             String?
+    biography          String?
+    biographyCn        String?
+    placeOfBirth       String?
+    profilePath        String?
+    knownForDepartment String?
+    popularity         Float?
+    gender             Int?
+    adult              Boolean?
+    // JSON string of images (profiles)
+    images             String?
+
+    createdAt          DateTime @default(now())
+    updatedAt          DateTime @updatedAt
+
+    @@index([name])
+    @@index([nameCn])
+    @@index([originalName])
+}
+
+// 同步状态 - 移至 TMDB 库
+model TmdbSyncStatus {
+    type         String   @id // movie, tv, person
+    status       String   // idle, running, completed, failed
+    progress     Int      @default(0) // 0-100
+    totalItems   Int      @default(0)
+    syncedItems  Int      @default(0)
+    lastSyncDate DateTime?
+    message      String?
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+}

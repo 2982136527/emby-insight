@@ -68,6 +68,11 @@ export interface EmbyItem {
     CriticRating?: number
     DateCreated?: string
     PremiereDate?: string
+    ProviderIds?: {
+        Tmdb?: string
+        Imdb?: string
+        [key: string]: string | undefined
+    }
 }
 
 export type EmbyItemType =
@@ -129,8 +134,8 @@ export interface ItemQueryParams {
     Limit?: number
     SortBy?: string
     SortOrder?: 'Ascending' | 'Descending'
-    IncludeItemTypes?: EmbyItemType[]
-    Fields?: string[]
+    IncludeItemTypes?: EmbyItemType[] | string
+    Fields?: string[] | string
     Filters?: string[]
     Recursive?: boolean
     ParentId?: string

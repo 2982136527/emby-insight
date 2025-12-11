@@ -94,6 +94,8 @@ model PlayHistory {
   @@index([serverId, playedAt])
   @@index([serverUserId, playedAt])
   @@index([itemType])
+  @@index([itemName])                   // 搜索优化
+  @@index([serverUserId, itemType])     // 统计查询优化
 }
 
 // 同步状态跟踪
@@ -154,6 +156,8 @@ model SessionLog {
   updatedAt    DateTime @updatedAt
   
   @@index([username, startedAt])
+  @@index([serverId, isActive])         // 活跃会话查询
+  @@index([endedAt])                    // 历史会话查询
 }
 
 // 通知配置
@@ -170,4 +174,63 @@ model NotificationConfig {
   onPlaybackStop  Boolean @default(false)
   
   updatedAt DateTime @updatedAt
+}
+
+
+// 配置
+model TmdbConfig {
+    id           Int      @id @default(autoincrement())
+    apiKey       String?
+    language     String   @default("zh-CN")
+    includeAdult Boolean  @default(false)
+    autoSync     Boolean  @default(false)
+    syncInterval Int      @default(24) // hours
+    enableFullSync Boolean @default(false)
+    updatedAt    DateTime @updatedAt
+}
+
+// 刮削文件夹配置
+model ScraperFolder {
+    id        String   @id @default(cuid())
+    path      String   @unique
+    type      String   @default("Movie") // Movie or Series
+    enabled   Boolean  @default(true)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    records   ScrapeRecord[]
+}
+
+// 刮削记录
+model ScrapeRecord {
+    id            String   @id @default(cuid())
+    filePath      String   @unique  // 文件路径作为唯一标识
+    fileName      String             // 文件名
+    mediaType     String             // Movie or Series
+    isStrm        Boolean  @default(false)
+    
+    // 匹配状态
+    matched       Boolean  @default(false)
+    tmdbId        Int?               // TMDB ID (movie or tv)
+    tmdbType      String?            // movie or tv
+    
+    // TMDB 元数据缓存
+    title         String?
+    titleCn       String?
+    posterPath    String?
+    releaseDate   String?
+    voteAverage   Float?
+    
+    // 匹配来源
+    matchSource   String?            // cache, api, manual
+    
+    // 关联刮削文件夹
+    folderId      String
+    folder        ScraperFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+    
+    createdAt     DateTime @default(now())
+    updatedAt     DateTime @updatedAt
+
+    @@index([folderId])
+    @@index([mediaType, matched])
 }

@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { subDays, format } from 'date-fns'
+import { cache, CacheKeys, CacheTTL } from '@/lib/cache'
 
 // GET /api/stats/dashboard - Get dashboard statistics
 export async function GET() {
     try {
+        // 检查缓存
+        const cached = cache.get(CacheKeys.DASHBOARD_STATS)
+        if (cached) {
+            return NextResponse.json(cached)
+        }
+
         const now = new Date()
         const thirtyDaysAgo = subDays(now, 30)
 
@@ -168,7 +175,7 @@ export async function GET() {
         })
         const todayUniqueCount = todayStats.length
 
-        return NextResponse.json({
+        const responseData = {
             overview: {
                 totalPlayDuration: Number(totalStats._sum.playDuration || 0),
                 totalPlayCount: totalStats._count,
@@ -201,7 +208,12 @@ export async function GET() {
                 playDuration: Number(stat._sum.playDuration || 0),
                 playCount: stat._count,
             })),
-        })
+        }
+
+        // 存入缓存
+        cache.set(CacheKeys.DASHBOARD_STATS, responseData, CacheTTL.DASHBOARD)
+
+        return NextResponse.json(responseData)
     } catch (error) {
         console.error('[API] Failed to get dashboard stats:', error)
         return NextResponse.json(

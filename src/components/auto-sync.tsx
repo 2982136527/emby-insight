@@ -25,6 +25,14 @@ export function AutoSync({ className }: AutoSyncProps) {
     const [countdown, setCountdown] = useState<number>(0)
     const queryClient = useQueryClient()
 
+    // Load from localStorage on mount
+    useEffect(() => {
+        const saved = localStorage.getItem('auto-sync-interval')
+        if (saved) {
+            setSyncInterval(saved as SyncInterval)
+        }
+    }, [])
+
     const syncMutation = useMutation({
         mutationFn: async () => {
             const res = await fetch('/api/sync', { method: 'POST' })
@@ -142,7 +150,10 @@ export function AutoSync({ className }: AutoSyncProps) {
                                         variant={syncInterval === value ? 'default' : 'outline'}
                                         size="sm"
                                         className="h-7 text-xs px-1"
-                                        onClick={() => setSyncInterval(value as SyncInterval)}
+                                        onClick={() => {
+                                            setSyncInterval(value as SyncInterval)
+                                            localStorage.setItem('auto-sync-interval', value)
+                                        }}
                                     >
                                         {label}
                                     </Button>

@@ -1,0 +1,79 @@
+#0 building with "orbstack" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 2.27kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:18-alpine
+#2 DONE 0.9s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 161B done
+#3 DONE 0.0s
+
+#4 [base 1/2] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e
+#4 DONE 0.0s
+
+#5 [base 2/2] RUN apk add --no-cache libc6-compat openssl
+#5 CACHED
+
+#6 [runner  2/10] RUN addgroup --system --gid 1001 nodejs
+#6 CACHED
+
+#7 [deps 1/3] WORKDIR /app
+#7 CACHED
+
+#8 [runner  5/10] RUN chown nextjs:nodejs .next
+#8 CACHED
+
+#9 [runner  4/10] RUN mkdir .next
+#9 CACHED
+
+#10 [runner  3/10] RUN adduser --system --uid 1001 nextjs
+#10 CACHED
+
+#11 [runner  6/10] RUN apk add --no-cache openssl
+#11 CACHED
+
+#12 [internal] load build context
+#12 transferring context: 9.53kB done
+#12 DONE 0.0s
+
+#13 [deps 2/3] COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+#13 CACHED
+
+#14 [deps 3/3] RUN     if [ -f yarn.lock ]; then yarn --frozen-lockfile;     elif [ -f package-lock.json ]; then npm ci;     elif [ -f pnpm-lock.yaml ]; then yarn global add pnpm && pnpm i --frozen-lockfile;     else echo "Lockfile not found." && exit 1;     fi
+#14 CACHED
+
+#15 [builder 2/5] COPY --from=deps /app/node_modules ./node_modules
+#15 CACHED
+
+#16 [builder 3/5] COPY . .
+#16 DONE 0.0s
+
+#17 [builder 4/5] RUN npx prisma generate
+#17 1.039 Failed to load config file "/app" as a TypeScript/JavaScript module. Error: PrismaConfigEnvError: Missing required environment variable: DATABASE_URL
+#17 ERROR: process "/bin/sh -c npx prisma generate" did not complete successfully: exit code: 1
+------
+ > [builder 4/5] RUN npx prisma generate:
+1.039 Failed to load config file "/app" as a TypeScript/JavaScript module. Error: PrismaConfigEnvError: Missing required environment variable: DATABASE_URL
+------
+
+ [33m6 warnings found (use docker --debug to expand):
+[0m - LegacyKeyValueFormat: "ENV key=value" should be used instead of legacy "ENV key value" format (line 30)
+ - LegacyKeyValueFormat: "ENV key=value" should be used instead of legacy "ENV key value" format (line 38)
+ - LegacyKeyValueFormat: "ENV key=value" should be used instead of legacy "ENV key value" format (line 40)
+ - LegacyKeyValueFormat: "ENV key=value" should be used instead of legacy "ENV key value" format (line 64)
+ - LegacyKeyValueFormat: "ENV key=value" should be used instead of legacy "ENV key value" format (line 66)
+ - JSONArgsRecommended: JSON arguments recommended for CMD to prevent unintended behavior related to OS signals (line 69)
+Dockerfile:25
+--------------------
+  23 |     
+  24 |     # Generate Prisma Client
+  25 | >>> RUN npx prisma generate
+  26 |     
+  27 |     # Next.js collects completely anonymous telemetry data about general usage.
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c npx prisma generate" did not complete successfully: exit code: 1
+
+View build details: docker-desktop://dashboard/build/orbstack/orbstack/4ldrynn0aup3i6ugmciw9ptbt

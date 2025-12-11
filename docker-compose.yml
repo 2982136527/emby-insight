@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  emby-insight:
+    container_name: emby-insight
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - DATABASE_URL=file:/app/data/dev.db
+      # Add other environment variables here if needed
+      # - NEXT_PUBLIC_API_URL=http://localhost:3000

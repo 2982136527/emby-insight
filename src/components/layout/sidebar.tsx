@@ -24,6 +24,9 @@ import {
     History,
     CalendarDays,
     Download,
+    Database,
+    Bell,
+    Wand2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useTheme } from 'next-themes'
@@ -78,9 +81,23 @@ const navItems = [
         icon: Trophy,
     },
     {
+        title: '媒体刮削',
+        href: '/scraper',
+        icon: Wand2,
+    },
+    {
+        title: 'TMDB 预览',
+        href: '/tmdb',
+        icon: Film,
+    },
+    {
         title: '设置',
-        href: '/settings',
+        href: '#',
         icon: Settings,
+        children: [
+            { title: '通用设置', href: '/settings', icon: Settings },
+            { title: 'TMDB 缓存', href: '/settings/tmdb', icon: Database },
+        ],
     },
 ]
 
@@ -89,7 +106,11 @@ export function Sidebar() {
     const { sidebarOpen, setSidebarOpen } = useUIStore()
     const { theme, setTheme } = useTheme()
     const [mounted, setMounted] = useState(false)
-    const [statsExpanded, setStatsExpanded] = useState(true)
+    const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({ '统计': true, '设置': true })
+
+    const toggleMenu = (title: string) => {
+        setExpandedMenus(prev => ({ ...prev, [title]: !prev[title] }))
+    }
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -156,7 +177,7 @@ export function Sidebar() {
                             {item.children ? (
                                 <div className="space-y-1">
                                     <button
-                                        onClick={() => setStatsExpanded(!statsExpanded)}
+                                        onClick={() => toggleMenu(item.title)}
                                         className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-lg transition-colors"
                                     >
                                         <div className="flex items-center gap-3">
@@ -166,13 +187,13 @@ export function Sidebar() {
                                         <ChevronDown
                                             className={cn(
                                                 "h-4 w-4 transition-transform duration-200",
-                                                statsExpanded ? "rotate-0" : "-rotate-90"
+                                                expandedMenus[item.title] ? "rotate-0" : "-rotate-90"
                                             )}
                                         />
                                     </button>
                                     <div className={cn(
                                         "ml-4 space-y-0.5 overflow-hidden transition-all duration-200",
-                                        statsExpanded ? "max-h-[40rem] opacity-100" : "max-h-0 opacity-0"
+                                        expandedMenus[item.title] ? "max-h-[40rem] opacity-100" : "max-h-0 opacity-0"
                                     )}>
                                         {item.children.map((child) => (
                                             <Link

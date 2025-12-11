@@ -1,0 +1,166 @@
+#0 building with "orbstack" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 2.37kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:18-alpine
+#2 DONE 0.4s
+
+#3 [base 1/2] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e
+#3 resolve docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e 0.0s done
+#3 sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e 7.67kB / 7.67kB done
+#3 sha256:929b04d7c782f04f615cf785488fed452b6569f87c73ff666ad553a7554f0006 1.72kB / 1.72kB done
+#3 sha256:ee77c6cd7c1886ecc802ad6cedef3a8ec1ea27d1fb96162bf03dd3710839b8da 6.18kB / 6.18kB done
+#3 sha256:f18232174bc91741fdf3da96d85011092101a032a93a388b79e99e69c2d5c870 3.64MB / 3.64MB 1.4s done
+#3 extracting sha256:f18232174bc91741fdf3da96d85011092101a032a93a388b79e99e69c2d5c870 0.0s done
+#3 sha256:1e5a4c89cee5c0826c540ab06d4b6b491c96eda01837f430bd47f0d26702d6e3 1.26MB / 1.26MB 2.0s done
+#3 sha256:25ff2da83641908f65c3a74d80409d6b1b62ccfaab220b9ea70b80df5a2e0549 446B / 446B 2.3s done
+#3 sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 40.01MB / 40.01MB 12.7s done
+#3 extracting sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e 0.6s done
+#3 extracting sha256:1e5a4c89cee5c0826c540ab06d4b6b491c96eda01837f430bd47f0d26702d6e3 0.0s done
+#3 extracting sha256:25ff2da83641908f65c3a74d80409d6b1b62ccfaab220b9ea70b80df5a2e0549 done
+#3 DONE 13.4s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 161B done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 4.31MB 0.0s done
+#5 DONE 0.0s
+
+#6 [base 2/2] RUN apk add --no-cache libc6-compat openssl
+#6 0.139 fetch https://dl-cdn.alpinelinux.org/alpine/v3.21/main/x86_64/APKINDEX.tar.gz
+#6 2.836 fetch https://dl-cdn.alpinelinux.org/alpine/v3.21/community/x86_64/APKINDEX.tar.gz
+#6 3.649 (1/6) Upgrading libcrypto3 (3.3.3-r0 -> 3.3.5-r0)
+#6 4.291 (2/6) Upgrading libssl3 (3.3.3-r0 -> 3.3.5-r0)
+#6 4.575 (3/6) Installing musl-obstack (1.2.3-r2)
+#6 4.800 (4/6) Installing libucontext (1.3.2-r0)
+#6 5.025 (5/6) Installing gcompat (1.1.0-r4)
+#6 5.257 (6/6) Installing openssl (3.3.5-r0)
+#6 5.604 Executing busybox-1.37.0-r12.trigger
+#6 5.624 OK: 11 MiB in 21 packages
+#6 DONE 6.0s
+
+#7 [deps 1/3] WORKDIR /app
+#7 DONE 0.0s
+
+#8 [runner  2/10] RUN addgroup --system --gid 1001 nodejs
+#8 ...
+
+#9 [deps 2/3] COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+#9 DONE 0.2s
+
+#8 [runner  2/10] RUN addgroup --system --gid 1001 nodejs
+#8 DONE 0.3s
+
+#10 [deps 3/3] RUN     if [ -f yarn.lock ]; then yarn --frozen-lockfile;     elif [ -f package-lock.json ]; then npm ci;     elif [ -f pnpm-lock.yaml ]; then yarn global add pnpm && pnpm i --frozen-lockfile;     else echo "Lockfile not found." && exit 1;     fi
+#10 ...
+
+#11 [runner  3/10] RUN adduser --system --uid 1001 nextjs
+#11 DONE 0.2s
+
+#12 [runner  4/10] RUN mkdir .next
+#12 DONE 0.1s
+
+#10 [deps 3/3] RUN     if [ -f yarn.lock ]; then yarn --frozen-lockfile;     elif [ -f package-lock.json ]; then npm ci;     elif [ -f pnpm-lock.yaml ]; then yarn global add pnpm && pnpm i --frozen-lockfile;     else echo "Lockfile not found." && exit 1;     fi
+#10 ...
+
+#13 [runner  5/10] RUN chown nextjs:nodejs .next
+#13 DONE 0.1s
+
+#14 [runner  6/10] RUN apk add --no-cache openssl
+#14 0.115 fetch https://dl-cdn.alpinelinux.org/alpine/v3.21/main/x86_64/APKINDEX.tar.gz
+#14 0.772 fetch https://dl-cdn.alpinelinux.org/alpine/v3.21/community/x86_64/APKINDEX.tar.gz
+#14 1.514 OK: 11 MiB in 21 packages
+#14 DONE 1.6s
+
+#10 [deps 3/3] RUN     if [ -f yarn.lock ]; then yarn --frozen-lockfile;     elif [ -f package-lock.json ]; then npm ci;     elif [ -f pnpm-lock.yaml ]; then yarn global add pnpm && pnpm i --frozen-lockfile;     else echo "Lockfile not found." && exit 1;     fi
+#10 1.800 npm warn EBADENGINE Unsupported engine {
+#10 1.800 npm warn EBADENGINE   package: 'next@16.0.8',
+#10 1.800 npm warn EBADENGINE   required: { node: '>=20.9.0' },
+#10 1.800 npm warn EBADENGINE   current: { node: 'v18.20.8', npm: '10.8.2' }
+#10 1.800 npm warn EBADENGINE }
+#10 31.07 
+#10 31.07 added 584 packages, and audited 585 packages in 30s
+#10 31.07 
+#10 31.07 160 packages are looking for funding
+#10 31.07   run `npm fund` for details
+#10 31.07 
+#10 31.07 found 0 vulnerabilities
+#10 31.07 npm notice
+#10 31.07 npm notice New major version of npm available! 10.8.2 -> 11.7.0
+#10 31.07 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.7.0
+#10 31.07 npm notice To update run: npm install -g npm@11.7.0
+#10 31.07 npm notice
+#10 DONE 31.7s
+
+#15 [builder 2/5] COPY --from=deps /app/node_modules ./node_modules
+#15 DONE 1.5s
+
+#16 [deps 2/3] COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+#16 CACHED
+
+#17 [deps 3/3] RUN     if [ -f yarn.lock ]; then yarn --frozen-lockfile;     elif [ -f package-lock.json ]; then npm ci;     elif [ -f pnpm-lock.yaml ]; then yarn global add pnpm && pnpm i --frozen-lockfile;     else echo "Lockfile not found." && exit 1;     fi
+#17 CACHED
+
+#18 [builder 2/5] COPY --from=deps /app/node_modules ./node_modules
+#18 CACHED
+
+#19 [builder 3/5] COPY . .
+#19 DONE 0.1s
+
+#20 [builder 4/5] RUN npx prisma generate
+#20 3.471 Loaded Prisma config from prisma.config.ts.
+#20 3.471 
+#20 3.838 Prisma config detected, skipping environment variable loading.
+#20 3.841 Prisma schema loaded from prisma/schema.prisma
+#20 5.954 
+#20 5.954 ✔ Generated Prisma Client (v6.19.0) to ./node_modules/@prisma/client in 141ms
+#20 5.954 
+#20 5.954 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+#20 5.954 
+#20 5.954 Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+#20 5.954 
+#20 5.999 npm notice
+#20 5.999 npm notice New major version of npm available! 10.8.2 -> 11.7.0
+#20 5.999 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.7.0
+#20 5.999 npm notice To update run: npm install -g npm@11.7.0
+#20 5.999 npm notice
+#20 DONE 6.0s
+
+#21 [builder 5/5] RUN npm run build
+#21 0.854 
+#21 0.854 > emby-insight@0.1.0 build
+#21 0.854 > next build
+#21 0.854 
+#21 1.348 You are using Node.js 18.20.8. For Next.js, Node.js version ">=20.9.0" is required.
+#21 ERROR: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+------
+ > [builder 5/5] RUN npm run build:
+0.854 
+0.854 > emby-insight@0.1.0 build
+0.854 > next build
+0.854 
+1.348 You are using Node.js 18.20.8. For Next.js, Node.js version ">=20.9.0" is required.
+------
+
+ [33m6 warnings found (use docker --debug to expand):
+[0m - LegacyKeyValueFormat: "ENV key=value" should be used instead of legacy "ENV key value" format (line 33)
+ - LegacyKeyValueFormat: "ENV key=value" should be used instead of legacy "ENV key value" format (line 41)
+ - LegacyKeyValueFormat: "ENV key=value" should be used instead of legacy "ENV key value" format (line 43)
+ - LegacyKeyValueFormat: "ENV key=value" should be used instead of legacy "ENV key value" format (line 67)
+ - LegacyKeyValueFormat: "ENV key=value" should be used instead of legacy "ENV key value" format (line 69)
+ - JSONArgsRecommended: JSON arguments recommended for CMD to prevent unintended behavior related to OS signals (line 72)
+Dockerfile:35
+--------------------
+  33 |     ENV NEXT_TELEMETRY_DISABLED 1
+  34 |     
+  35 | >>> RUN npm run build
+  36 |     
+  37 |     # Production image, copy all the files and run next
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+
+View build details: docker-desktop://dashboard/build/orbstack/orbstack/9pv43xk4exf4p35rwhmrnbx46
