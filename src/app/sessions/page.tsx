@@ -98,6 +98,7 @@ export default function SessionsPage() {
         try {
             const res = await fetch(`/api/sessions/${sessionId}/command`, {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ command: 'stop' }),
             })
             if (!res.ok) throw new Error('Failed to stop session')
@@ -116,6 +117,7 @@ export default function SessionsPage() {
         try {
             const res = await fetch(`/api/sessions/${sessionId}/command`, {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ command: 'message', text: messageText }),
             })
             if (!res.ok) throw new Error('Failed to send message')
@@ -223,7 +225,7 @@ export default function SessionsPage() {
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
                         <div className="flex flex-wrap gap-2">
-                            {data.clientDistribution
+                            {[...data.clientDistribution]
                                 .sort((a, b) => b.count - a.count)
                                 .map((item, index) => (
                                     <div

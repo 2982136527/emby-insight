@@ -8,7 +8,16 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { resolve } from 'path'
 import type { ScraperFolder } from '@prisma/client'
+
+// 路径安全校验：防止路径穿越
+function validatePath(p: string): boolean {
+    const resolved = resolve(p)
+    // 禁止访问系统关键目录
+    const blocked = ['/etc', '/proc', '/sys', '/dev', '/boot', '/root']
+    return !blocked.some(b => resolved === b || resolved.startsWith(b + '/'))
+}
 
 // GET /api/scraper/folders - Get all folders
 export async function GET() {
@@ -40,6 +49,10 @@ export async function POST(request: NextRequest) {
 
         if (!path || !path.trim()) {
             return NextResponse.json({ error: '路径不能为空' }, { status: 400 })
+        }
+
+        if (!validatePath(path.trim())) {
+            return NextResponse.json({ error: '不允许访问该路径' }, { status: 400 })
         }
 
         // Upsert - update if exists, create if not

@@ -4,7 +4,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from 'next-themes'
 import { useState } from 'react'
 import { Toaster } from '@/components/ui/sonner'
-import { CommandPalette } from '@/components/command-palette'
 
 interface ProvidersProps {
     children: React.ReactNode
@@ -33,7 +32,6 @@ export function Providers({ children }: ProvidersProps) {
                 disableTransitionOnChange
             >
                 {children}
-                <CommandPalette />
                 <Toaster position="top-right" />
             </ThemeProvider>
         </QueryClientProvider>

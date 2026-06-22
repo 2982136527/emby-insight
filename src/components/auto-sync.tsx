@@ -62,11 +62,15 @@ export function AutoSync({ className }: AutoSyncProps) {
         }
     }, [])
 
+    // 用 ref 存储 nextSync 时间，避免闭包捕获旧值
+    const nextSyncRef = useRef<Date | null>(null)
+
     // Auto-sync timer
     useEffect(() => {
         if (syncInterval === '0') {
             setNextSync(null)
             setCountdown(0)
+            nextSyncRef.current = null
             return
         }
 
@@ -78,10 +82,13 @@ export function AutoSync({ className }: AutoSyncProps) {
         // Set initial next sync time
         const next = new Date(Date.now() + intervalMs)
         setNextSync(next)
+        nextSyncRef.current = next
 
-        // Countdown updater
+        // Countdown updater - 从 ref 读取最新的 nextSync
         const countdownTimer = window.setInterval(() => {
-            const remaining = Math.max(0, Math.floor((next.getTime() - Date.now()) / 1000))
+            const current = nextSyncRef.current
+            if (!current) return
+            const remaining = Math.max(0, Math.floor((current.getTime() - Date.now()) / 1000))
             setCountdown(remaining)
         }, 1000)
 
@@ -89,6 +96,7 @@ export function AutoSync({ className }: AutoSyncProps) {
         const syncTimer = window.setInterval(() => {
             triggerSync()
             const newNext = new Date(Date.now() + intervalMs)
+            nextSyncRef.current = newNext
             setNextSync(newNext)
         }, intervalMs)
 

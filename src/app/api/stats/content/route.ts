@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
         const genreMap = new Map<string, number>()
         history.forEach((record) => {
             try {
-                const genres = JSON.parse(record.genres) as string[]
+                const genres = JSON.parse(record.genres || '[]') as string[]
                 genres.forEach((genre) => {
                     genreMap.set(genre, (genreMap.get(genre) || 0) + Number(record.playDuration))
                 })

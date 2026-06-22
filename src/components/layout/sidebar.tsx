@@ -86,8 +86,8 @@ const navItems = [
         icon: Wand2,
     },
     {
-        title: 'TMDB 预览',
-        href: '/tmdb',
+        title: 'TMDB 缓存',
+        href: '/tmdb-admin',
         icon: Film,
     },
     {
@@ -96,7 +96,6 @@ const navItems = [
         icon: Settings,
         children: [
             { title: '通用设置', href: '/settings', icon: Settings },
-            { title: 'TMDB 缓存', href: '/settings/tmdb', icon: Database },
         ],
     },
 ]

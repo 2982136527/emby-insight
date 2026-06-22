@@ -54,15 +54,16 @@ export function CommandMenu() {
     }, [])
 
     // Query users for search
-    const { data: users } = useQuery<{ id: string; username: string; serverName: string }[]>({
+    const { data: users } = useQuery<Array<{ id: string; username: string; server?: { name: string } }>>({
         queryKey: ['users-search'],
         queryFn: async () => {
-            const res = await fetch('/api/users?limit=100') // Get reasonable amount
+            const res = await fetch('/api/users?limit=100')
             if (!res.ok) return []
             const data = await res.json()
-            return data.users || []
+            // API 返回直接数组或 { users: [...] } 包装
+            return Array.isArray(data) ? data : (data.users || [])
         },
-        enabled: open, // Only fetch when open
+        enabled: open,
     })
 
     return (
@@ -124,7 +125,7 @@ export function CommandMenu() {
                         >
                             <User className="mr-2 h-4 w-4" />
                             <span>{user.username}</span>
-                            <span className="ml-2 text-xs text-muted-foreground">({user.serverName})</span>
+                            <span className="ml-2 text-xs text-muted-foreground">({user.server?.name || ''})</span>
                         </CommandItem>
                     ))}
                 </CommandGroup>

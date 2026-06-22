@@ -2,7 +2,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@theme inline {
+@theme {
   --color-background: oklch(100% 0 0);
   --color-foreground: oklch(14.5% 0 0);
   --color-card: oklch(100% 0 0);
@@ -106,6 +106,14 @@
 
 .dark ::-webkit-scrollbar-thumb:hover {
   background: oklch(45% 0 0);
+}
+
+.scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
 }
 
 /* Animation utilities */

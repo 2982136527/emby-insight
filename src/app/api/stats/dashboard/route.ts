@@ -161,8 +161,8 @@ export async function GET() {
             })
         )
 
-        // Today's stats
-        const today = new Date()
+        // Today's stats - reuse 'now' to avoid midnight drift
+        const today = new Date(now)
         today.setHours(0, 0, 0, 0)
 
         // Count unique items for today

@@ -116,7 +116,9 @@ export function ActiveSessions() {
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-fade-in pb-6">
             {sortedSessions.map((session, index) => {
-                const progress = (session.playState.positionTicks / session.item.runTimeTicks) * 100
+                const progress = session.item.runTimeTicks > 0
+                    ? (session.playState.positionTicks / session.item.runTimeTicks) * 100
+                    : 0
                 const backdropUrl = `/api/image?serverId=${session.serverId}&itemId=${session.item.id}&type=Backdrop`
                 const posterUrl = `/api/image?serverId=${session.serverId}&itemId=${session.item.id}&type=Primary`
                 const realDuration = formatRealDuration(session.startedAt)

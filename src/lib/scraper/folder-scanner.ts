@@ -5,12 +5,7 @@
 
 import * as fs from 'fs'
 import * as path from 'path'
-
-// Supported media file extensions
-const MEDIA_EXTENSIONS = new Set([
-    '.mkv', '.mp4', '.avi', '.strm', '.ts', '.m2ts',
-    '.mov', '.wmv', '.flv', '.webm', '.m4v', '.mpg', '.mpeg'
-])
+import { MEDIA_EXTENSIONS } from '@/lib/constants'
 
 // Extensions to skip (subtitles, images, etc.)
 const SKIP_EXTENSIONS = new Set([

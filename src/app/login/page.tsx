@@ -76,8 +76,7 @@ export default function LoginPage() {
                         </Button>
                     </form>
                     <p className="text-xs text-muted-foreground text-center mt-4">
-                        默认密码: admin123<br />
-                        可通过环境变量 ADMIN_PASSWORD 自定义
+                        请通过环境变量 ADMIN_PASSWORD 或 ADMIN_PASSWORD_HASH 设置密码
                     </p>
                 </CardContent>
             </Card>

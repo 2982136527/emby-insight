@@ -1,12 +1,12 @@
 /**
  * Scraper Service
- * Orchestrates matching Emby items to TMDB entries and enriching metadata.
+ * Matches Emby items to TMDB entries using the TMDB proxy cache.
  */
 
-import { tmdbPrisma } from '@/lib/prisma'
-import { matchItem, MatchResult } from './matcher'
-import { TmdbClient, extractChineseTranslation } from '@/lib/tmdb'
 import { prisma } from '@/lib/prisma'
+import { matchItem, MatchResult } from './matcher'
+import { handleTmdbRequest } from '@/lib/tmdb-proxy/proxy'
+import { tmdbProxyConfig } from '@/lib/tmdb-proxy/config'
 
 export interface EmbyItemForScrape {
     id: string
@@ -37,7 +37,6 @@ export interface ScrapedItemResult {
         genres: number[]
     }
     source: 'cache' | 'api' | 'none'
-    // Debug info for unmatched items
     debugInfo?: {
         parsedTitle: string
         parsedYear: number | null
@@ -56,242 +55,143 @@ export interface ScrapeProgress {
     currentItem?: string
 }
 
-// Global state for tracking scrape progress
 let scrapeProgress: ScrapeProgress = {
-    total: 0,
-    processed: 0,
-    matched: 0,
-    unmatched: 0,
-    status: 'idle',
+    total: 0, processed: 0, matched: 0, unmatched: 0, status: 'idle',
 }
 let shouldCancel = false
 
-export function getScrapeProgress(): ScrapeProgress {
-    return { ...scrapeProgress }
-}
-
-export function cancelScrape(): void {
-    shouldCancel = true
-}
-
+export function getScrapeProgress(): ScrapeProgress { return { ...scrapeProgress } }
+export function cancelScrape(): void { shouldCancel = true }
 export function resetScrape(): void {
-    scrapeProgress = {
-        total: 0,
-        processed: 0,
-        matched: 0,
-        unmatched: 0,
-        status: 'idle',
-    }
+    scrapeProgress = { total: 0, processed: 0, matched: 0, unmatched: 0, status: 'idle' }
     shouldCancel = false
 }
 
 /**
- * Get cached TMDB items for matching
- * Fetches a batch of items from local cache for efficient matching
+ * Extract metadata from a TMDB API response (cached or fresh)
  */
-async function getCachedTmdbItems(
-    type: 'movie' | 'tv',
-    searchTerm: string,
-    limit: number = 50
-) {
+function extractMetadata(data: any, type: 'movie' | 'tv') {
+    if (type === 'movie') {
+        return {
+            tmdbId: data.id,
+            title: data.title || '',
+            titleCn: data.titleCn || null,
+            overview: data.overview || null,
+            overviewCn: data.overviewCn || null,
+            posterPath: data.poster_path || null,
+            backdropPath: data.backdrop_path || null,
+            voteAverage: data.vote_average ?? null,
+            releaseDate: data.release_date || null,
+            genres: data.genres?.map((g: any) => g.id) || data.genre_ids || [],
+        }
+    } else {
+        return {
+            tmdbId: data.id,
+            title: data.name || '',
+            titleCn: data.nameCn || null,
+            overview: data.overview || null,
+            overviewCn: data.overviewCn || null,
+            posterPath: data.poster_path || null,
+            backdropPath: data.backdrop_path || null,
+            voteAverage: data.vote_average ?? null,
+            releaseDate: data.first_air_date || null,
+            genres: data.genres?.map((g: any) => g.id) || data.genre_ids || [],
+        }
+    }
+}
+
+/**
+ * Search local TMDB cache for matching items
+ */
+async function searchLocalCache(type: 'movie' | 'tv', searchTerm: string): Promise<any[]> {
     const normalizedSearch = searchTerm.toLowerCase()
 
-    if (type === 'movie') {
-        return tmdbPrisma.tmdbMovie.findMany({
-            where: {
-                OR: [
-                    { title: { contains: normalizedSearch } },
-                    { titleCn: { contains: normalizedSearch } },
-                    { originalTitle: { contains: normalizedSearch } },
-                ],
-            },
-            select: {
-                id: true,
-                title: true,
-                titleCn: true,
-                originalTitle: true,
-                releaseDate: true,
-                overview: true,
-                overviewCn: true,
-                posterPath: true,
-                backdropPath: true,
-                voteAverage: true,
-                genreIds: true,
-            },
-            take: limit,
-            orderBy: { popularity: 'desc' },
-        })
-    } else {
-        return tmdbPrisma.tmdbTvShow.findMany({
-            where: {
-                OR: [
-                    { name: { contains: normalizedSearch } },
-                    { nameCn: { contains: normalizedSearch } },
-                    { originalName: { contains: normalizedSearch } },
-                ],
-            },
-            select: {
-                id: true,
-                name: true,
-                nameCn: true,
-                originalName: true,
-                firstAirDate: true,
-                overview: true,
-                overviewCn: true,
-                posterPath: true,
-                backdropPath: true,
-                voteAverage: true,
-                genreIds: true,
-            },
-            take: limit,
-            orderBy: { popularity: 'desc' },
-        })
+    // Search in TmdbCache entries that match the type
+    const typePrefix = `3/${type}/`
+    const searchPrefix = `3/search/${type}`
+
+    // Get detail entries
+    const entries = await prisma.tmdbCache.findMany({
+        where: {
+            url: { startsWith: typePrefix },
+        },
+        select: { url: true, response: true },
+        take: 500,
+        orderBy: { updatedAt: 'desc' },
+    })
+
+    const results: any[] = []
+    for (const entry of entries) {
+        try {
+            const data = JSON.parse(entry.response)
+            const title = type === 'movie' ? data.title : data.name
+            const titleCn = type === 'movie' ? data.titleCn : data.nameCn
+            const originalTitle = type === 'movie' ? data.original_title : data.original_name
+
+            if (!title) continue
+
+            const titleLower = title.toLowerCase()
+            const titleCnLower = (titleCn || '').toLowerCase()
+            const origLower = (originalTitle || '').toLowerCase()
+
+            if (titleLower.includes(normalizedSearch) ||
+                titleCnLower.includes(normalizedSearch) ||
+                origLower.includes(normalizedSearch)) {
+                results.push({
+                    id: data.id,
+                    title: data.title || data.name,
+                    titleCn: data.titleCn || data.nameCn || null,
+                    originalTitle: data.original_title || data.original_name || null,
+                    releaseDate: data.release_date || data.first_air_date || null,
+                    posterPath: data.poster_path || null,
+                    backdropPath: data.backdrop_path || null,
+                    voteAverage: data.vote_average ?? null,
+                    overview: data.overview || null,
+                    overviewCn: data.overviewCn || null,
+                    genreIds: data.genres ? JSON.stringify(data.genres.map((g: any) => g.id)) : null,
+                })
+            }
+        } catch { /* skip invalid JSON */ }
     }
+
+    // Sort by popularity (use voteAverage as proxy)
+    results.sort((a, b) => (b.voteAverage || 0) - (a.voteAverage || 0))
+    return results.slice(0, 50)
 }
 
 /**
  * Get metadata from cache by TMDB ID
  */
 async function getMetadataFromCache(tmdbId: number, type: 'movie' | 'tv') {
-    if (type === 'movie') {
-        const movie = await tmdbPrisma.tmdbMovie.findUnique({
-            where: { id: tmdbId },
-        })
-        if (movie) {
-            return {
-                tmdbId: movie.id,
-                title: movie.title,
-                titleCn: movie.titleCn,
-                overview: movie.overview,
-                overviewCn: movie.overviewCn,
-                posterPath: movie.posterPath,
-                backdropPath: movie.backdropPath,
-                voteAverage: movie.voteAverage,
-                releaseDate: movie.releaseDate,
-                genres: movie.genreIds ? JSON.parse(movie.genreIds) : [],
-            }
-        }
-    } else {
-        const tv = await tmdbPrisma.tmdbTvShow.findUnique({
-            where: { id: tmdbId },
-        })
-        if (tv) {
-            return {
-                tmdbId: tv.id,
-                title: tv.name,
-                titleCn: tv.nameCn,
-                overview: tv.overview,
-                overviewCn: tv.overviewCn,
-                posterPath: tv.posterPath,
-                backdropPath: tv.backdropPath,
-                voteAverage: tv.voteAverage,
-                releaseDate: tv.firstAirDate,
-                genres: tv.genreIds ? JSON.parse(tv.genreIds) : [],
-            }
-        }
+    const prefix = `3/${type}/${tmdbId}`
+    const entry = await prisma.tmdbCache.findFirst({
+        where: { url: { startsWith: prefix } },
+        select: { response: true },
+    })
+    if (!entry) return null
+
+    try {
+        const data = JSON.parse(entry.response)
+        return extractMetadata(data, type)
+    } catch {
+        return null
     }
-    return null
 }
 
 /**
- * Get metadata from TMDB API (fallback)
+ * Fetch metadata from TMDB through proxy (auto-caches)
  */
-async function getMetadataFromApi(
-    tmdbId: number,
-    type: 'movie' | 'tv',
-    client: TmdbClient
-) {
+async function getMetadataFromApi(tmdbId: number, type: 'movie' | 'tv') {
+    const apiKey = tmdbProxyConfig.tmdb.apiKey
+    if (!apiKey) return null
+
     try {
-        if (type === 'movie') {
-            const movie = await client.getMovie(tmdbId)
-            const translations = await client.getMovieTranslations(tmdbId)
-            const cn = extractChineseTranslation(translations)
-
-            // Cache the result
-            const movieData = {
-                id: movie.id,
-                imdbId: movie.imdb_id,
-                title: movie.title,
-                originalTitle: movie.original_title,
-                titleCn: cn?.title || cn?.name,
-                overview: movie.overview,
-                overviewCn: cn?.overview,
-                releaseDate: movie.release_date,
-                runtime: movie.runtime,
-                popularity: movie.popularity,
-                voteAverage: movie.vote_average,
-                voteCount: movie.vote_count,
-                posterPath: movie.poster_path,
-                backdropPath: movie.backdrop_path,
-                genreIds: movie.genres ? JSON.stringify(movie.genres.map(g => g.id)) : null,
-                isAdult: movie.adult,
-            }
-
-            await tmdbPrisma.tmdbMovie.upsert({
-                where: { id: movie.id },
-                update: movieData,
-                create: movieData,
-            })
-
-            return {
-                tmdbId: movie.id,
-                title: movie.title,
-                titleCn: cn?.title || cn?.name || null,
-                overview: movie.overview ?? null,
-                overviewCn: cn?.overview ?? null,
-                posterPath: movie.poster_path ?? null,
-                backdropPath: movie.backdrop_path ?? null,
-                voteAverage: movie.vote_average ?? null,
-                releaseDate: movie.release_date ?? null,
-                genres: movie.genres?.map(g => g.id) || [],
-            }
-        } else {
-            const tv = await client.getTvShow(tmdbId)
-            const translations = await client.getTvTranslations(tmdbId)
-            const cn = extractChineseTranslation(translations)
-
-            // Cache the result
-            const tvData = {
-                id: tv.id,
-                name: tv.name,
-                originalName: tv.original_name,
-                nameCn: cn?.name || cn?.title,
-                overview: tv.overview,
-                overviewCn: cn?.overview,
-                firstAirDate: tv.first_air_date,
-                lastAirDate: tv.last_air_date,
-                numberOfSeasons: tv.number_of_seasons,
-                numberOfEpisodes: tv.number_of_episodes,
-                popularity: tv.popularity,
-                voteAverage: tv.vote_average,
-                voteCount: tv.vote_count,
-                posterPath: tv.poster_path,
-                backdropPath: tv.backdrop_path,
-                genreIds: tv.genres ? JSON.stringify(tv.genres.map(g => g.id)) : null,
-                status: tv.status,
-            }
-
-            await tmdbPrisma.tmdbTvShow.upsert({
-                where: { id: tv.id },
-                update: tvData,
-                create: tvData,
-            })
-
-            return {
-                tmdbId: tv.id,
-                title: tv.name,
-                titleCn: cn?.name || cn?.title || null,
-                overview: tv.overview ?? null,
-                overviewCn: cn?.overview ?? null,
-                posterPath: tv.poster_path ?? null,
-                backdropPath: tv.backdrop_path ?? null,
-                voteAverage: tv.vote_average ?? null,
-                releaseDate: tv.first_air_date ?? null,
-                genres: tv.genres?.map(g => g.id) || [],
-            }
-        }
+        const data = await handleTmdbRequest(
+            `3/${type}/${tmdbId}?api_key=${apiKey}&language=${tmdbProxyConfig.tmdb.language}`
+        )
+        return extractMetadata(data, type)
     } catch (error) {
-        console.error(`[Scraper] Failed to fetch from API: ${tmdbId}`, error)
+        console.error(`[Scraper] Failed to fetch from TMDB proxy: ${tmdbId}`, error)
         return null
     }
 }
@@ -299,11 +199,9 @@ async function getMetadataFromApi(
 /**
  * Scrape a single Emby item
  */
-export async function scrapeItem(
-    item: EmbyItemForScrape,
-    client: TmdbClient | null
-): Promise<ScrapedItemResult> {
+export async function scrapeItem(item: EmbyItemForScrape): Promise<ScrapedItemResult> {
     const type = item.type === 'Movie' ? 'movie' : 'tv'
+    const apiKey = tmdbProxyConfig.tmdb.apiKey
 
     // If item already has TMDB ID, use it directly
     if (item.providerId?.Tmdb) {
@@ -314,32 +212,20 @@ export async function scrapeItem(
                 embyItemId: item.id,
                 embyItemName: item.name,
                 embyItemType: item.type,
-                matchResult: {
-                    matched: true,
-                    tmdbId,
-                    confidence: 1,
-                    matchType: 'exact',
-                    candidates: [],
-                },
+                matchResult: { matched: true, tmdbId, confidence: 1, matchType: 'exact', candidates: [] },
                 metadata,
                 source: 'cache',
             }
         }
         // Cache miss, try API
-        if (client) {
-            const apiMetadata = await getMetadataFromApi(tmdbId, type, client)
+        if (apiKey) {
+            const apiMetadata = await getMetadataFromApi(tmdbId, type)
             if (apiMetadata) {
                 return {
                     embyItemId: item.id,
                     embyItemName: item.name,
                     embyItemType: item.type,
-                    matchResult: {
-                        matched: true,
-                        tmdbId,
-                        confidence: 1,
-                        matchType: 'exact',
-                        candidates: [],
-                    },
+                    matchResult: { matched: true, tmdbId, confidence: 1, matchType: 'exact', candidates: [] },
                     metadata: apiMetadata,
                     source: 'api',
                 }
@@ -348,22 +234,19 @@ export async function scrapeItem(
     }
 
     // Search in local cache first
-    const cachedItems = await getCachedTmdbItems(type, item.name)
+    const cachedItems = await searchLocalCache(type, item.name)
 
-    // Convert to matcher format
-    // Convert to matcher format
     const matcherItems = cachedItems.map((c: any) => ({
         id: c.id,
-        title: type === 'movie' ? c.title : c.name,
-        titleCn: type === 'movie' ? c.titleCn : c.nameCn,
-        originalTitle: type === 'movie' ? c.originalTitle : c.originalName,
-        releaseDate: type === 'movie' ? c.releaseDate : c.firstAirDate,
+        title: c.title,
+        titleCn: c.titleCn,
+        originalTitle: c.originalTitle,
+        releaseDate: c.releaseDate,
     }))
 
     const matchResult = matchItem(item.name, item.productionYear, matcherItems)
 
     if (matchResult.matched && matchResult.tmdbId) {
-        // Found in cache
         const cachedMetadata = cachedItems.find((c: any) => c.id === matchResult.tmdbId)
         if (cachedMetadata) {
             return {
@@ -373,14 +256,14 @@ export async function scrapeItem(
                 matchResult,
                 metadata: {
                     tmdbId: cachedMetadata.id,
-                    title: type === 'movie' ? (cachedMetadata as any).title : (cachedMetadata as any).name,
-                    titleCn: type === 'movie' ? (cachedMetadata as any).titleCn : (cachedMetadata as any).nameCn,
+                    title: cachedMetadata.title,
+                    titleCn: cachedMetadata.titleCn,
                     overview: cachedMetadata.overview,
                     overviewCn: cachedMetadata.overviewCn,
                     posterPath: cachedMetadata.posterPath,
                     backdropPath: cachedMetadata.backdropPath,
                     voteAverage: cachedMetadata.voteAverage,
-                    releaseDate: type === 'movie' ? (cachedMetadata as any).releaseDate : (cachedMetadata as any).firstAirDate,
+                    releaseDate: cachedMetadata.releaseDate,
                     genres: cachedMetadata.genreIds ? JSON.parse(cachedMetadata.genreIds) : [],
                 },
                 source: 'cache',
@@ -388,31 +271,27 @@ export async function scrapeItem(
         }
     }
 
-    // Fallback to API search if client available and (no match OR cache was empty)
-    if (client && (!matchResult.matched || cachedItems.length === 0)) {
+    // Fallback to TMDB API through proxy
+    if (apiKey && (!matchResult.matched || cachedItems.length === 0)) {
         try {
             console.log(`[Scraper] 缓存${cachedItems.length === 0 ? '无结果' : '未匹配'}，尝试TMDB API搜索: "${item.name}"`)
 
-            const searchResults = type === 'movie'
-                ? await client.searchMovies(item.name)
-                : await client.searchTvShows(item.name)
+            const searchUrl = `3/search/${type}?api_key=${apiKey}&language=${tmdbProxyConfig.tmdb.language}&query=${encodeURIComponent(item.name)}`
+            const searchResults = await handleTmdbRequest(searchUrl)
 
-            if (searchResults.results.length > 0) {
-                console.log(`[Scraper] API找到 ${searchResults.results.length} 条结果`)
-
-                const apiItems = searchResults.results.slice(0, 10).map(r => ({
+            if (searchResults.results?.length > 0) {
+                const apiItems = searchResults.results.slice(0, 10).map((r: any) => ({
                     id: r.id,
-                    title: type === 'movie' ? (r as any).title : (r as any).name,
+                    title: type === 'movie' ? r.title : r.name,
                     titleCn: null,
-                    originalTitle: type === 'movie' ? (r as any).original_title : (r as any).original_name,
-                    releaseDate: type === 'movie' ? (r as any).release_date : (r as any).first_air_date,
+                    originalTitle: type === 'movie' ? r.original_title : r.original_name,
+                    releaseDate: type === 'movie' ? r.release_date : r.first_air_date,
                 }))
 
                 const apiMatchResult = matchItem(item.name, item.productionYear, apiItems)
 
                 if (apiMatchResult.matched && apiMatchResult.tmdbId) {
-                    console.log(`[Scraper] API匹配成功: ${apiMatchResult.tmdbId}，正在获取详情并缓存...`)
-                    const apiMetadata = await getMetadataFromApi(apiMatchResult.tmdbId, type, client)
+                    const apiMetadata = await getMetadataFromApi(apiMatchResult.tmdbId, type)
                     if (apiMetadata) {
                         return {
                             embyItemId: item.id,
@@ -424,43 +303,28 @@ export async function scrapeItem(
                         }
                     }
                 } else if (searchResults.results.length === 1) {
-                    // 只有1条结果时，大概率就是要找的，直接使用（信任搜索结果）
                     const singleResult = searchResults.results[0]
-                    console.log(`[Scraper] API只有1条结果，信任此结果: ${singleResult.id}`)
-                    const apiMetadata = await getMetadataFromApi(singleResult.id, type, client)
+                    const apiMetadata = await getMetadataFromApi(singleResult.id, type)
                     if (apiMetadata) {
                         return {
                             embyItemId: item.id,
                             embyItemName: item.name,
                             embyItemType: item.type,
-                            matchResult: {
-                                matched: true,
-                                tmdbId: singleResult.id,
-                                confidence: 0.7, // 标记为中等置信度
-                                matchType: 'fuzzy' as const,
-                                candidates: apiMatchResult.candidates,
-                            },
+                            matchResult: { matched: true, tmdbId: singleResult.id, confidence: 0.7, matchType: 'fuzzy', candidates: apiMatchResult.candidates },
                             metadata: apiMetadata,
                             source: 'api',
                         }
                     }
-                } else {
-                    console.log(`[Scraper] API结果未能匹配（相似度不足或年份不符）`)
                 }
-            } else {
-                console.log(`[Scraper] TMDB API也无结果: "${item.name}"`)
             }
         } catch (error) {
             console.error(`[Scraper] API search failed for: ${item.name}`, error)
         }
-    } else if (!client && cachedItems.length === 0) {
-        console.log(`[Scraper] 缓存无结果且未配置TMDB API Key，无法在线获取: "${item.name}"`)
     }
 
-    // No match found - add debug info
+    // No match
     const cacheResultCount = cachedItems.length
     let reason = '未知原因'
-
     if (cacheResultCount === 0) {
         reason = `本地缓存中搜索"${item.name}"无结果，请确认TMDB缓存已同步`
     } else if (!matchResult.matched && matchResult.candidates.length > 0) {
@@ -475,21 +339,13 @@ export async function scrapeItem(
         reason = `缓存中有${cacheResultCount}条结果但标题不匹配（相似度低于80%阈值）`
     }
 
-    console.log(`[Scraper] 未匹配: "${item.name}" → 解析为 "${item.name}" (${item.productionYear || '无年份'}) | ${reason}`)
-
     return {
         embyItemId: item.id,
         embyItemName: item.name,
         embyItemType: item.type,
         matchResult,
         source: 'none',
-        debugInfo: {
-            parsedTitle: item.name,
-            parsedYear: item.productionYear ?? null,
-            searchedType: type,
-            cacheResultCount,
-            reason,
-        }
+        debugInfo: { parsedTitle: item.name, parsedYear: item.productionYear ?? null, searchedType: type, cacheResultCount, reason },
     }
 }
 
@@ -500,10 +356,6 @@ export async function scrapeItems(
     items: EmbyItemForScrape[],
     onProgress?: (progress: ScrapeProgress) => void
 ): Promise<ScrapedItemResult[]> {
-    // Get TMDB config for API fallback
-    const config = await prisma.tmdbConfig.findFirst()
-    const client = config?.apiKey ? new TmdbClient(config.apiKey, config.language) : null
-
     resetScrape()
     scrapeProgress.total = items.length
     scrapeProgress.status = 'running'
@@ -519,22 +371,17 @@ export async function scrapeItems(
         scrapeProgress.currentItem = item.name
         onProgress?.(getScrapeProgress())
 
-        const result = await scrapeItem(item, client)
+        const result = await scrapeItem(item)
         results.push(result)
 
         scrapeProgress.processed++
-        if (result.matchResult.matched) {
-            scrapeProgress.matched++
-        } else {
-            scrapeProgress.unmatched++
-        }
+        if (result.matchResult.matched) scrapeProgress.matched++
+        else scrapeProgress.unmatched++
 
         onProgress?.(getScrapeProgress())
     }
 
-    if (scrapeProgress.status !== 'cancelled') {
-        scrapeProgress.status = 'completed'
-    }
+    if (scrapeProgress.status !== 'cancelled') scrapeProgress.status = 'completed'
     scrapeProgress.currentItem = undefined
     onProgress?.(getScrapeProgress())
 

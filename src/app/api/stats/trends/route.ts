@@ -6,8 +6,8 @@ import { subDays, startOfDay, format } from 'date-fns'
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url)
-        const days = parseInt(searchParams.get('days') || '7')
-        const limitDays = Math.min(days, 90) // Max 90 days
+        const rawDays = parseInt(searchParams.get('days') || '7')
+        const limitDays = Math.max(1, Math.min(isNaN(rawDays) ? 7 : rawDays, 90)) // 1-90 days
 
         const startDate = startOfDay(subDays(new Date(), limitDays))
 
@@ -65,7 +65,9 @@ export async function GET(request: NextRequest) {
             summary: {
                 totalDuration: trends.reduce((sum, d) => sum + d.duration, 0),
                 totalCount: trends.reduce((sum, d) => sum + d.count, 0),
-                avgDailyHours: Math.round(trends.reduce((sum, d) => sum + d.hours, 0) / trends.length * 10) / 10,
+                avgDailyHours: trends.length > 0
+                    ? Math.round(trends.reduce((sum, d) => sum + d.hours, 0) / trends.length * 10) / 10
+                    : 0,
                 changePercent,
                 changeDirection: changePercent >= 0 ? 'up' : 'down',
             }

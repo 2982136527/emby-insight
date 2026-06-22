@@ -10,6 +10,14 @@ export async function GET(request: NextRequest) {
         const month = searchParams.get('month') || format(new Date(), 'yyyy-MM')
         const userId = searchParams.get('userId')
 
+        // Validate month format (YYYY-MM)
+        if (!/^\d{4}-\d{2}$/.test(month)) {
+            return NextResponse.json(
+                { error: 'Invalid month format, expected YYYY-MM' },
+                { status: 400 }
+            )
+        }
+
         // Parse month to get date range
         const monthDate = parseISO(`${month}-01`)
         const start = startOfMonth(monthDate)

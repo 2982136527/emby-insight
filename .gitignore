@@ -50,3 +50,7 @@ next-env.d.ts
 *.sqlite
 *.sqlite-journal
 
+# tmdb proxy
+tmdb-proxy-config.json
+warmer_checkpoint.json
+

@@ -234,3 +234,26 @@ model ScrapeRecord {
     @@index([folderId])
     @@index([mediaType, matched])
 }
+
+// TMDB 缓存代理
+model TmdbCache {
+  id        Int      @id @default(autoincrement())
+  url       String   @unique
+  response  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  expiresAt DateTime @default(now())
+}
+
+// API 调用日志
+model ApiLog {
+  id        Int      @id @default(autoincrement())
+  url       String
+  title     String?
+  type      String?
+  source    String?
+  hit       Boolean
+  ip        String?
+  ua        String?
+  createdAt DateTime @default(now())
+}

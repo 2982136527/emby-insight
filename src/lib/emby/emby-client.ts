@@ -22,6 +22,31 @@ interface RetryConfig {
     maxDelay: number
 }
 
+// User policy interface (declared before EmbyClient to avoid hoisting issues)
+export interface UserPolicy {
+    IsAdministrator?: boolean
+    IsHidden?: boolean
+    IsDisabled?: boolean
+    EnableAllFolders?: boolean
+    EnabledFolders?: string[]
+    EnableLiveTvAccess?: boolean
+    EnableLiveTvManagement?: boolean
+    EnableContentDownloading?: boolean
+    EnableContentDeletion?: boolean
+    EnableContentDeletionFromFolders?: string[]
+    EnableRemoteAccess?: boolean
+    EnablePlaybackRemuxing?: boolean
+    EnableMediaPlayback?: boolean
+    EnableAudioPlaybackTranscoding?: boolean
+    EnableVideoPlaybackTranscoding?: boolean
+    EnableSubtitleManagement?: boolean
+    EnableSyncTranscoding?: boolean
+    MaxParentalRating?: number
+    BlockedTags?: string[]
+    RemoteClientBitrateLimit?: number
+    SimultaneousStreamLimit?: number
+}
+
 export class EmbyClient {
     private client: AxiosInstance
     private retryConfig: RetryConfig
@@ -30,8 +55,8 @@ export class EmbyClient {
     constructor(config: EmbyClientConfig) {
         const { baseUrl, port, apiKey, timeout = 30000, maxRetries = 3 } = config
 
-        // Normalize URL
-        this.baseUrl = baseUrl.replace(/\/$/, '')
+        // Normalize URL - remove all trailing slashes
+        this.baseUrl = baseUrl.replace(/\/+$/, '')
         if (port !== 80 && port !== 443) {
             this.baseUrl = `${this.baseUrl}:${port}`
         }
@@ -488,31 +513,6 @@ export class EmbyClient {
             `updateUserPassword:${userId}`
         )
     }
-}
-
-// User policy interface
-export interface UserPolicy {
-    IsAdministrator?: boolean
-    IsHidden?: boolean
-    IsDisabled?: boolean
-    EnableAllFolders?: boolean
-    EnabledFolders?: string[]
-    EnableLiveTvAccess?: boolean
-    EnableLiveTvManagement?: boolean
-    EnableContentDownloading?: boolean
-    EnableContentDeletion?: boolean
-    EnableContentDeletionFromFolders?: string[]
-    EnableRemoteAccess?: boolean
-    EnablePlaybackRemuxing?: boolean
-    EnableMediaPlayback?: boolean
-    EnableAudioPlaybackTranscoding?: boolean
-    EnableVideoPlaybackTranscoding?: boolean
-    EnableSubtitleManagement?: boolean
-    EnableSyncTranscoding?: boolean
-    MaxParentalRating?: number
-    BlockedTags?: string[]
-    RemoteClientBitrateLimit?: number
-    SimultaneousStreamLimit?: number
 }
 
 // Factory function for creating clients

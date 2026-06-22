@@ -23,21 +23,24 @@ export default function SettingsPage() {
     const { theme, setTheme } = useTheme()
     const [mounted, setMounted] = useState(false)
     const [isClearing, setIsClearing] = useState(false)
+    const [hideTitles, setHideTitles] = useState(false)
+    const [anonymousMode, setAnonymousMode] = useState(false)
 
     useEffect(() => {
         setMounted(true)
+        setHideTitles(localStorage.getItem('hide-titles') === 'true')
+        setAnonymousMode(localStorage.getItem('anonymous-mode') === 'true')
     }, [])
 
     const handleClearData = async () => {
-        if (!confirm('确定要清除所有数据吗？此操作无法撤销。')) {
+        if (!confirm('确定要清除所有本地缓存数据吗？此操作无法撤销。')) {
             return
         }
 
         setIsClearing(true)
         try {
-            // Clear localStorage
             localStorage.clear()
-            toast.success('本地数据已清除，正在刷新...')
+            toast.success('本地缓存已清除，正在刷新...')
             setTimeout(() => window.location.reload(), 1000)
         } catch {
             toast.error('清除数据失败')
@@ -123,7 +126,13 @@ export default function SettingsPage() {
                                 仅显示时长，不显示具体影片标题
                             </p>
                         </div>
-                        <Switch />
+                        <Switch
+                            checked={hideTitles}
+                            onCheckedChange={(checked) => {
+                                setHideTitles(checked)
+                                localStorage.setItem('hide-titles', String(checked))
+                            }}
+                        />
                     </div>
                     <Separator />
                     <div className="flex items-center justify-between">
@@ -133,7 +142,13 @@ export default function SettingsPage() {
                                 在统计中隐藏所有用户名
                             </p>
                         </div>
-                        <Switch />
+                        <Switch
+                            checked={anonymousMode}
+                            onCheckedChange={(checked) => {
+                                setAnonymousMode(checked)
+                                localStorage.setItem('anonymous-mode', String(checked))
+                            }}
+                        />
                     </div>
                 </CardContent>
             </Card>
@@ -167,7 +182,7 @@ export default function SettingsPage() {
                         <div className="space-y-0.5">
                             <Label>清除所有数据</Label>
                             <p className="text-sm text-muted-foreground">
-                                移除所有服务器、用户和播放记录
+                                清除本地缓存（主题、仪表盘配置等）
                             </p>
                         </div>
                         <Button

@@ -85,7 +85,25 @@ export async function PUT(
             apiKey: server.apiKey,
         })
 
-        await client.updateUserPolicy(id, policy)
+        // 字段白名单：只允许更新安全的策略字段
+        const allowedFields: (keyof import('@/lib/emby/emby-client').UserPolicy)[] = [
+            'IsHidden', 'IsDisabled', 'EnableAllFolders', 'EnabledFolders',
+            'EnableLiveTvAccess', 'EnableLiveTvManagement',
+            'EnableContentDownloading', 'EnableContentDeletion',
+            'EnableContentDeletionFromFolders', 'EnableRemoteAccess',
+            'EnablePlaybackRemuxing', 'EnableMediaPlayback',
+            'EnableAudioPlaybackTranscoding', 'EnableVideoPlaybackTranscoding',
+            'EnableSubtitleManagement', 'EnableSyncTranscoding',
+            'MaxParentalRating', 'BlockedTags',
+            'RemoteClientBitrateLimit', 'SimultaneousStreamLimit',
+        ]
+        const safePolicy: Record<string, unknown> = {}
+        for (const field of allowedFields) {
+            if (field in policy) {
+                safePolicy[field] = (policy as Record<string, unknown>)[field]
+            }
+        }
+        await client.updateUserPolicy(id, safePolicy as Partial<typeof policy>)
 
         return NextResponse.json({ success: true })
     } catch (error) {

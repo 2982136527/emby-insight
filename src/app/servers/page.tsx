@@ -91,6 +91,35 @@ export default function ServersPage() {
         },
     })
 
+    // Update server mutation
+    const updateMutation = useMutation({
+        mutationFn: async (data: { id: string; formData: typeof formData }) => {
+            const res = await fetch(`/api/servers/${data.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...data.formData,
+                    port: parseInt(data.formData.port, 10),
+                    ...(data.formData.apiKey === '' && { apiKey: undefined }),
+                }),
+            })
+            if (!res.ok) {
+                const error = await res.json()
+                throw new Error(error.error || 'Failed to update server')
+            }
+            return res.json()
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['servers'] })
+            setIsDialogOpen(false)
+            resetForm()
+            toast.success('服务器更新成功')
+        },
+        onError: (error: Error) => {
+            toast.error(error.message)
+        },
+    })
+
     // Delete server mutation
     const deleteMutation = useMutation({
         mutationFn: async (id: string) => {
@@ -122,12 +151,14 @@ export default function ServersPage() {
         },
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['servers'] })
-            const result = data.results[0]
-            if (result.error) {
+            const result = data.results?.[0]
+            if (!result) {
+                toast.warning('同步完成，无返回数据')
+            } else if (result.error) {
                 toast.error(`同步失败: ${result.error}`)
             } else {
                 toast.success(
-                    `同步完成: ${result.usersSync.added} 新增用户, ${result.historySync.added} 新增记录`
+                    `同步完成: ${result.usersSync?.added || 0} 新增用户, ${result.historySync?.added || 0} 新增记录`
                 )
             }
         },
@@ -143,7 +174,11 @@ export default function ServersPage() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        createMutation.mutate(formData)
+        if (editingServer) {
+            updateMutation.mutate({ id: editingServer.id, formData })
+        } else {
+            createMutation.mutate(formData)
+        }
     }
 
     return (
@@ -251,8 +286,8 @@ export default function ServersPage() {
                                     >
                                         取消
                                     </Button>
-                                    <Button type="submit" disabled={createMutation.isPending}>
-                                        {createMutation.isPending && (
+                                    <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                                        {(createMutation.isPending || updateMutation.isPending) && (
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                         )}
                                         {editingServer ? '保存修改' : '添加服务器'}

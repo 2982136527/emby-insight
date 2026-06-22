@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { startOfDay, endOfDay, subDays } from 'date-fns'
+import { calculateRealDuration, findPeakHour, aggregateGenres } from '@/lib/stats-utils'
 
 // GET /api/stats/daily - Get today's viewing statistics
 export async function GET(request: NextRequest) {
@@ -65,17 +66,11 @@ export async function GET(request: NextRequest) {
         let count1080p = 0
 
         for (const record of todayHistory) {
-            // Calculate Real Duration
-            const playCount = Number(record.playCount || 0)
-            const itemDuration = Number(record.duration || 0)
-            const currentPosition = Number(record.playbackPosition || 0)
-
-            // Formula: (PlayCount * Duration) + Position
-            let realDuration = 0
-            if (playCount > 0) {
-                realDuration += (playCount * itemDuration)
-            }
-            realDuration += currentPosition
+            const realDuration = calculateRealDuration(
+                record.playCount,
+                record.duration,
+                record.playbackPosition
+            )
 
             // Add to total
             totalDuration += realDuration
@@ -103,15 +98,7 @@ export async function GET(request: NextRequest) {
             itemStats.set(key, existingItem)
 
             // Genre Stats
-            try {
-                const genres: string[] = JSON.parse(record.genres || '[]')
-                for (const genre of genres) {
-                    const clean = genre.trim()
-                    if (clean && !clean.includes(':') && clean.length <= 20) {
-                        genreStats.set(clean, (genreStats.get(clean) || 0) + realDuration)
-                    }
-                }
-            } catch { /* skip */ }
+            aggregateGenres(record.genres, realDuration, genreStats)
 
             // Hourly Data
             const hour = new Date(record.playedAt).getHours()
@@ -151,14 +138,11 @@ export async function GET(request: NextRequest) {
 
         let yesterdayDuration = 0
         for (const record of yesterdayHistory) {
-            const playCount = Number(record.playCount || 0)
-            const itemDuration = Number(record.duration || 0)
-            const currentPosition = Number(record.playbackPosition || 0)
-
-            if (playCount > 0) {
-                yesterdayDuration += (playCount * itemDuration)
-            }
-            yesterdayDuration += currentPosition
+            yesterdayDuration += calculateRealDuration(
+                record.playCount,
+                record.duration,
+                record.playbackPosition
+            )
         }
 
         const durationTrend = yesterdayDuration > 0
@@ -185,14 +169,7 @@ export async function GET(request: NextRequest) {
             .map(([client, count]) => ({ client, count }))
 
         // Peak hour
-        let peakHour = 0
-        let peakValue = 0
-        hourlyData.forEach((value, hour) => {
-            if (value > peakValue) {
-                peakValue = value
-                peakHour = hour
-            }
-        })
+        const { hour: peakHour } = findPeakHour(hourlyData)
 
         return NextResponse.json({
             date: targetDate.toISOString().split('T')[0],

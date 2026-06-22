@@ -64,7 +64,6 @@ export async function GET(request: NextRequest) {
         } | null = null
 
         for (const ep of episodes) {
-            const epDuration = Number(ep.playDuration) / 10000000 / 60 // minutes
             const userName = ep.serverUser.globalUser?.name || ep.serverUser.username
 
             if (!ep.seriesName) continue
@@ -74,9 +73,10 @@ export async function GET(request: NextRequest) {
                 currentMarathon.userId === ep.serverUserId &&
                 currentMarathon.seriesName === ep.seriesName
             ) {
-                // Check if this episode is within 2 hours of the last one
+                // 用上一集的结束时间（开始时间 + 时长）来计算间隔
                 const lastEp = currentMarathon.episodes[currentMarathon.episodes.length - 1]
-                const gap = differenceInMinutes(ep.playedAt, lastEp.playedAt)
+                const lastEpEndTime = lastEp.playedAt.getTime() + Number(lastEp.duration) / 10000 // ticks to ms
+                const gap = differenceInMinutes(ep.playedAt, new Date(lastEpEndTime))
 
                 if (gap <= 120) { // Within 2 hours
                     currentMarathon.episodes.push({ playedAt: ep.playedAt, duration: ep.playDuration })

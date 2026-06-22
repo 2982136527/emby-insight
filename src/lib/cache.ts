@@ -10,6 +10,23 @@ interface CacheEntry<T> {
 
 class MemoryCache {
     private cache = new Map<string, CacheEntry<unknown>>()
+    private cleanupTimer: ReturnType<typeof setInterval> | null = null
+
+    constructor() {
+        // 每 5 分钟清理一次过期条目
+        this.cleanupTimer = setInterval(() => {
+            this.cleanup()
+        }, 5 * 60 * 1000)
+    }
+
+    private cleanup(): void {
+        const now = Date.now()
+        for (const [key, entry] of this.cache.entries()) {
+            if (now > entry.expiresAt) {
+                this.cache.delete(key)
+            }
+        }
+    }
 
     /**
      * 获取缓存数据

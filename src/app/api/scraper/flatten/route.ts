@@ -6,12 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as fs from 'fs'
 import * as path from 'path'
-
-// Supported media file extensions
-const MEDIA_EXTENSIONS = new Set([
-    '.mkv', '.mp4', '.avi', '.strm', '.ts', '.m2ts',
-    '.mov', '.wmv', '.flv', '.webm', '.m4v', '.mpg', '.mpeg'
-])
+import { MEDIA_EXTENSIONS } from '@/lib/constants'
 
 interface FlattenResult {
     flattened: number
