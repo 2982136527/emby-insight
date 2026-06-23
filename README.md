@@ -5,8 +5,6 @@
 ![Prisma](https://img.shields.io/badge/Prisma-5-blue)
 [![Docker Image Version (latest by date)](https://img.shields.io/docker/v/qiuhusama/emby-insight?label=docker%20image)](https://hub.docker.com/r/qiuhusama/emby-insight)
 
-![Dashboard Preview](./public/dashboard-preview.png)
-
 **Emby Insight** 是一个专为 Emby 媒体服务器设计的现代化数据分析与监控面板。它通过直观的图表和详细的统计数据，帮助管理员全面了解服务器的使用情况、用户行为和媒体库状态。
 
 > 项目初衷：Emby 原生仪表盘功能较为基础，难以满足对用户活跃度、观看偏好、设备分布等深层次数据的挖掘需求。
